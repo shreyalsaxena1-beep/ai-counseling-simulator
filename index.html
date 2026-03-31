@@ -5,78 +5,135 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 flex flex-col items-center p-6">
+<body id="body" class="flex flex-col items-center p-6 bg-cover bg-center min-h-screen" 
+style="background-image: url('https://images.unsplash.com/photo-1588776814546-ec7e6d5a6d65');">
 
-  <h1 class="text-3xl font-bold mb-4">AI Counseling Training Simulator</h1>
+<!-- DARK OVERLAY -->
+<div class="absolute inset-0 bg-black bg-opacity-40 -z-10"></div>
 
-  <button onclick="startSession()" class="bg-blue-500 text-white px-4 py-2 rounded-xl mb-4">
-    Start Session
-  </button>
+<h1 class="text-3xl font-bold mb-4 text-white">AI Counseling Training Simulator</h1>
 
-  <div id="chat" class="hidden w-full max-w-xl bg-white p-4 rounded-xl shadow h-96 overflow-y-auto"></div>
+<!-- CASE SELECT -->
+<select id="caseSelect" class="mb-4 p-2 rounded">
+  <option value="anxiety">Anxiety</option>
+  <option value="depression">Depression</option>
+  <option value="relationship">Relationship</option>
+</select>
 
-  <div id="inputArea" class="hidden mt-4 w-full max-w-xl flex gap-2">
-    <input id="userInput" class="flex-1 border p-2 rounded" placeholder="Type your response..." />
-    <button onclick="sendMessage()" class="bg-green-500 text-white px-4 rounded">Send</button>
-  </div>
+<button onclick="startSession()" class="bg-blue-500 text-white px-4 py-2 rounded-xl mb-4">
+  Start Session
+</button>
 
-  <button id="endBtn" onclick="endSession()" class="hidden mt-4 bg-red-500 text-white px-4 py-2 rounded">
-    End Session & Get Feedback
-  </button>
+<div id="chat" class="hidden w-full max-w-xl bg-white p-4 rounded-xl shadow h-96 overflow-y-auto flex flex-col gap-2"></div>
+
+<div id="inputArea" class="hidden mt-4 w-full max-w-xl flex gap-2">
+  <input id="userInput" class="flex-1 border p-2 rounded" placeholder="Type your response..." />
+  <button onclick="sendMessage()" class="bg-green-500 text-white px-4 rounded">Send</button>
+</div>
+
+<button id="endBtn" onclick="endSession()" class="hidden mt-4 bg-red-500 text-white px-4 py-2 rounded">
+  End Session & Get Feedback
+</button>
 
 <script>
+
+// 🎨 BACKGROUND SWITCH
+function setBackground(caseType) {
+  const body = document.getElementById("body");
+
+  let imageUrl = "";
+
+  if (caseType === "anxiety") {
+    imageUrl = "https://images.unsplash.com/photo-1506126613408-eca07ce68773";
+  } else if (caseType === "depression") {
+    imageUrl = "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d";
+  } else if (caseType === "relationship") {
+    imageUrl = "https://images.unsplash.com/photo-1511988617509-a57c8a288659";
+  } else {
+    imageUrl = "https://images.unsplash.com/photo-1588776814546-ec7e6d5a6d65";
+  }
+
+  body.style.backgroundImage = `url(${imageUrl})`;
+}
+
+// ▶ START SESSION
 function startSession() {
+  const selectedCase = document.getElementById("caseSelect").value;
+
+  setBackground(selectedCase);
+
   document.getElementById("chat").classList.remove("hidden");
   document.getElementById("inputArea").classList.remove("hidden");
   document.getElementById("endBtn").classList.remove("hidden");
 }
 
-function addMessage(sender, text) {
-  const chat = document.getElementById("chat");
-  chat.innerHTML += `<div class="mb-2"><b>${sender}:</b> ${text}</div>`;
-  chat.scrollTop = chat.scrollHeight;
-}
-
+// 💬 SEND MESSAGE
 async function sendMessage() {
   const input = document.getElementById("userInput");
   const text = input.value;
+
   if (!text) return;
 
   addMessage("You", text);
   input.value = "";
 
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: text })
-    });
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ message: text })
+  });
 
-    const data = await response.json();
-    addMessage("Patient", data.reply);
-  } catch (error) {
-    addMessage("Error", "Something went wrong");
-  }
+  const data = await response.json();
+
+  addMessage("Patient", data.reply);
 }
 
+// 🛑 END SESSION
 async function endSession() {
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: "END SESSION" })
-    });
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ message: "END SESSION" })
+  });
 
-    const data = await response.json();
-    addMessage("Feedback", data.reply);
-  } catch (error) {
-    addMessage("Error", "Could not get feedback");
-  }
+  const data = await response.json();
+
+  addMessage("Feedback", data.reply);
 }
+
+// 🎯 ADD MESSAGE (CHAT + FEEDBACK UI)
+function addMessage(sender, text) {
+  const chat = document.getElementById("chat");
+
+  const isUser = sender === "You";
+  const isFeedback = sender === "Feedback";
+
+  const bubble = document.createElement("div");
+
+  if (isFeedback) {
+    bubble.className = "p-4 rounded-2xl bg-white shadow-lg w-full text-sm";
+    bubble.innerHTML = formatFeedback(text);
+  } else {
+    bubble.className = `p-3 rounded-xl max-w-xs ${
+      isUser
+        ? "bg-blue-500 text-white self-end ml-auto"
+        : "bg-gray-200 text-black self-start mr-auto"
+    }`;
+    bubble.innerText = text;
+  }
+
+  chat.appendChild(bubble);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// 🧾 FORMAT FEEDBACK (REPORT STYLE)
+function formatFeedback(text) {
+  return text
+    .replace(/([A-Z ]+:)/g, "<h3 class='font-bold text-blue-600 mt-3'>$1</h3>")
+    .replace(/- /g, "• ")
+    .replace(/\n/g, "<br>");
+}
+
 </script>
 
 </body>
