@@ -5,33 +5,43 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body id="body" class="flex flex-col items-center p-6 bg-cover bg-center min-h-screen" 
+<body id="body" class="flex flex-col items-center min-h-screen bg-cover bg-center relative"
 style="background-image: url('https://images.unsplash.com/photo-1588776814546-ec7e6d5a6d65');">
 
 <!-- DARK OVERLAY -->
-<div class="absolute inset-0 bg-black bg-opacity-40 -z-10"></div>
+<div class="absolute inset-0 bg-black bg-opacity-50"></div>
 
-<h1 class="text-3xl font-bold mb-4 text-white">AI Counseling Training Simulator</h1>
+<h1 class="text-3xl font-bold mt-6 text-white z-10">
+  AI Counseling Training Simulator
+</h1>
 
 <!-- CASE SELECT -->
-<select id="caseSelect" class="mb-4 p-2 rounded">
-  <option value="anxiety">Anxiety</option>
-  <option value="depression">Depression</option>
-  <option value="relationship">Relationship</option>
-</select>
+<div class="z-10 mt-4 flex gap-2">
+  <select id="caseSelect" class="p-2 rounded">
+    <option value="anxiety">Anxiety</option>
+    <option value="depression">Depression</option>
+    <option value="relationship">Relationship</option>
+  </select>
 
-<button onclick="startSession()" class="bg-blue-500 text-white px-4 py-2 rounded-xl mb-4">
-  Start Session
-</button>
-
-<div id="chat" class="hidden w-full max-w-xl bg-white p-4 rounded-xl shadow h-96 overflow-y-auto flex flex-col gap-2"></div>
-
-<div id="inputArea" class="hidden mt-4 w-full max-w-xl flex gap-2">
-  <input id="userInput" class="flex-1 border p-2 rounded" placeholder="Type your response..." />
-  <button onclick="sendMessage()" class="bg-green-500 text-white px-4 rounded">Send</button>
+  <button onclick="startSession()" class="bg-blue-500 text-white px-4 py-2 rounded-xl">
+    Start Session
+  </button>
 </div>
 
-<button id="endBtn" onclick="endSession()" class="hidden mt-4 bg-red-500 text-white px-4 py-2 rounded">
+<!-- CHAT AREA (NO BOX, FLOATING) -->
+<div id="chat" class="hidden flex flex-col gap-3 w-full max-w-2xl mt-6 px-4 z-10 overflow-y-auto"
+style="height: 60vh;">
+</div>
+
+<!-- INPUT AREA (FIXED BOTTOM) -->
+<div id="inputArea" class="hidden fixed bottom-0 w-full max-w-2xl flex gap-2 p-4 z-10 backdrop-blur-md bg-white/20 rounded-t-2xl">
+  <input id="userInput" class="flex-1 p-3 rounded-full border-none outline-none" placeholder="Type your response..." />
+  <button onclick="sendMessage()" class="bg-green-500 text-white px-5 rounded-full">
+    Send
+  </button>
+</div>
+
+<button id="endBtn" onclick="endSession()" class="hidden mb-24 mt-4 bg-red-500 text-white px-4 py-2 rounded z-10">
   End Session & Get Feedback
 </button>
 
@@ -101,7 +111,7 @@ async function endSession() {
   addMessage("Feedback", data.reply);
 }
 
-// 🎯 ADD MESSAGE (CHAT + FEEDBACK UI)
+// 🎯 ADD MESSAGE
 function addMessage(sender, text) {
   const chat = document.getElementById("chat");
 
@@ -111,13 +121,13 @@ function addMessage(sender, text) {
   const bubble = document.createElement("div");
 
   if (isFeedback) {
-    bubble.className = "p-4 rounded-2xl bg-white shadow-lg w-full text-sm";
+    bubble.className = "p-4 rounded-2xl bg-white/90 backdrop-blur-md shadow-lg w-full text-sm";
     bubble.innerHTML = formatFeedback(text);
   } else {
-    bubble.className = `p-3 rounded-xl max-w-xs ${
+    bubble.className = `px-4 py-2 rounded-2xl max-w-xs text-sm shadow-md ${
       isUser
         ? "bg-blue-500 text-white self-end ml-auto"
-        : "bg-gray-200 text-black self-start mr-auto"
+        : "bg-white/80 backdrop-blur text-black self-start mr-auto"
     }`;
     bubble.innerText = text;
   }
@@ -126,7 +136,7 @@ function addMessage(sender, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-// 🧾 FORMAT FEEDBACK (REPORT STYLE)
+// 🧾 FORMAT FEEDBACK
 function formatFeedback(text) {
   return text
     .replace(/([A-Z ]+:)/g, "<h3 class='font-bold text-blue-600 mt-3'>$1</h3>")
