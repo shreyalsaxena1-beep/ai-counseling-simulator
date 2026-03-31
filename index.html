@@ -5,40 +5,31 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body id="body" class="flex flex-col items-center min-h-screen bg-cover bg-center relative"
-style="background-image: url('https://images.unsplash.com/photo-1588776814546-ec7e6d5a6d65');">
+<body class="min-h-screen flex flex-col items-center justify-start bg-cover bg-center relative"
+style="background-image: url('https://images.unsplash.com/photo-1604881991720-f91add269bed');">
 
-<!-- DARK OVERLAY -->
-<div class="absolute inset-0 bg-black bg-opacity-50"></div>
+<!-- SUBTLE OVERLAY -->
+<div class="absolute inset-0 bg-white/70 backdrop-blur-sm"></div>
 
-<h1 class="text-3xl font-bold mt-6 text-white z-10">
+<h1 class="text-3xl font-bold mt-6 z-10 text-gray-800">
   AI Counseling Training Simulator
 </h1>
 
-<!-- CASE SELECT -->
-<div class="z-10 mt-4 flex gap-2">
-  <select id="caseSelect" class="p-2 rounded">
-    <option value="anxiety">Anxiety</option>
-    <option value="depression">Depression</option>
-    <option value="relationship">Relationship</option>
-  </select>
-
-  <button onclick="startSession()" class="bg-blue-500 text-white px-4 py-2 rounded-xl">
-    Start Session
-  </button>
+<!-- CASE BUBBLES -->
+<div id="caseContainer" class="flex gap-4 mt-6 z-10">
+  <button onclick="startSession('anxiety')" class="px-4 py-2 bg-blue-100 rounded-full shadow">Anxiety</button>
+  <button onclick="startSession('depression')" class="px-4 py-2 bg-purple-100 rounded-full shadow">Depression</button>
+  <button onclick="startSession('relationship')" class="px-4 py-2 bg-pink-100 rounded-full shadow">Relationship</button>
 </div>
 
-<!-- CHAT AREA (NO BOX, FLOATING) -->
+<!-- CHAT -->
 <div id="chat" class="hidden flex flex-col gap-3 w-full max-w-2xl mt-6 px-4 z-10 overflow-y-auto"
-style="height: 60vh;">
-</div>
+style="height: 60vh;"></div>
 
-<!-- INPUT AREA (FIXED BOTTOM) -->
-<div id="inputArea" class="hidden fixed bottom-0 w-full max-w-2xl flex gap-2 p-4 z-10 backdrop-blur-md bg-white/20 rounded-t-2xl">
-  <input id="userInput" class="flex-1 p-3 rounded-full border-none outline-none" placeholder="Type your response..." />
-  <button onclick="sendMessage()" class="bg-green-500 text-white px-5 rounded-full">
-    Send
-  </button>
+<!-- INPUT -->
+<div id="inputArea" class="hidden fixed bottom-0 w-full max-w-2xl flex gap-2 p-4 z-10 bg-white/80 backdrop-blur-md rounded-t-2xl">
+  <input id="userInput" class="flex-1 p-3 rounded-full outline-none border" placeholder="Type your response..." />
+  <button onclick="sendMessage()" class="bg-green-500 text-white px-5 rounded-full">Send</button>
 </div>
 
 <button id="endBtn" onclick="endSession()" class="hidden mb-24 mt-4 bg-red-500 text-white px-4 py-2 rounded z-10">
@@ -47,38 +38,22 @@ style="height: 60vh;">
 
 <script>
 
-// 🎨 BACKGROUND SWITCH
-function setBackground(caseType) {
-  const body = document.getElementById("body");
-
-  let imageUrl = "";
-
-  if (caseType === "anxiety") {
-    imageUrl = "https://images.unsplash.com/photo-1506126613408-eca07ce68773";
-  } else if (caseType === "depression") {
-    imageUrl = "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d";
-  } else if (caseType === "relationship") {
-    imageUrl = "https://images.unsplash.com/photo-1511988617509-a57c8a288659";
-  } else {
-    imageUrl = "https://images.unsplash.com/photo-1588776814546-ec7e6d5a6d65";
-  }
-
-  body.style.backgroundImage = `url(${imageUrl})`;
-}
+let currentCase = "";
 
 // ▶ START SESSION
-function startSession() {
-  const selectedCase = document.getElementById("caseSelect").value;
+function startSession(caseType) {
+  currentCase = caseType;
 
-  setBackground(selectedCase);
-
+  document.getElementById("caseContainer").classList.add("hidden");
   document.getElementById("chat").classList.remove("hidden");
   document.getElementById("inputArea").classList.remove("hidden");
   document.getElementById("endBtn").classList.remove("hidden");
+
+  addMessage("Patient", getInitialMessage(caseType));
 }
 
 // 💬 SEND MESSAGE
-async function sendMessage() {
+function sendMessage() {
   const input = document.getElementById("userInput");
   const text = input.value;
 
@@ -87,53 +62,79 @@ async function sendMessage() {
   addMessage("You", text);
   input.value = "";
 
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ message: text })
-  });
-
-  const data = await response.json();
-
-  addMessage("Patient", data.reply);
+  // FAKE AI RESPONSE (NO BACKEND)
+  setTimeout(() => {
+    addMessage("Patient", generateReply(text));
+  }, 800);
 }
 
 // 🛑 END SESSION
-async function endSession() {
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ message: "END SESSION" })
-  });
-
-  const data = await response.json();
-
-  addMessage("Feedback", data.reply);
+function endSession() {
+  addMessage("Feedback", generateFeedback());
 }
 
 // 🎯 ADD MESSAGE
 function addMessage(sender, text) {
   const chat = document.getElementById("chat");
 
-  const isUser = sender === "You";
-  const isFeedback = sender === "Feedback";
-
   const bubble = document.createElement("div");
 
-  if (isFeedback) {
-    bubble.className = "p-4 rounded-2xl bg-white/90 backdrop-blur-md shadow-lg w-full text-sm";
+  if (sender === "Feedback") {
+    bubble.className = "p-4 rounded-2xl bg-white shadow w-full text-sm";
     bubble.innerHTML = formatFeedback(text);
   } else {
-    bubble.className = `px-4 py-2 rounded-2xl max-w-xs text-sm shadow-md ${
-      isUser
+    bubble.className = `px-4 py-2 rounded-2xl max-w-xs text-sm shadow ${
+      sender === "You"
         ? "bg-blue-500 text-white self-end ml-auto"
-        : "bg-white/80 backdrop-blur text-black self-start mr-auto"
+        : "bg-gray-200 text-black self-start"
     }`;
     bubble.innerText = text;
   }
 
   chat.appendChild(bubble);
   chat.scrollTop = chat.scrollHeight;
+}
+
+// 🧠 INITIAL CASE PROMPTS
+function getInitialMessage(type) {
+  if (type === "anxiety") {
+    return "I feel constantly worried... like something bad will happen.";
+  }
+  if (type === "depression") {
+    return "I don’t feel like doing anything anymore.";
+  }
+  if (type === "relationship") {
+    return "I keep having fights with my partner and I don’t know why.";
+  }
+}
+
+// 🤖 SIMPLE AI LOGIC (TEMP)
+function generateReply(userText) {
+  const responses = [
+    "That sounds really difficult. Can you tell me more?",
+    "How long have you been feeling this way?",
+    "What usually happens when this feeling comes up?",
+    "I’m here with you. Let’s explore this together.",
+    "What do you think might be contributing to this?"
+  ];
+
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
+// 📊 FEEDBACK
+function generateFeedback() {
+  return `
+STRENGTHS:
+- You engaged with the client
+- Maintained conversation flow
+
+AREAS TO IMPROVE:
+- Ask more open-ended questions
+- Show deeper empathy
+
+SUGGESTION:
+- Try reflecting emotions more clearly
+`;
 }
 
 // 🧾 FORMAT FEEDBACK
